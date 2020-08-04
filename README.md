@@ -23,6 +23,15 @@ Universal binaries are included in the plugin, so you can run in both iOS simula
 
 You may need to open your app's `/android` folder in `Android Studio`, so that it detects, downloads and cofigures requirements that might be missing, like the `NDK` and `CMake` to build the native code part of the project.
 
+Copy this to `MainApplication.java`:
+
+```java
+static {
+    System.loadLibrary("nodejs-mobile-react-native-native-lib");
+    System.loadLibrary("node");
+}
+```
+
 You can also set the environment variable `ANDROID_NDK_HOME`, as in this example:
 ```sh
 export ANDROID_NDK_HOME=/Users/username/Library/Android/sdk/ndk-bundle
