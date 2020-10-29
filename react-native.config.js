@@ -12,10 +12,6 @@ module.exports = {
             path: './scripts/ios-copy-nodejs-project.sh',
             execution_position: 'after_compile'
           }, {
-            name: '[NODEJS MOBILE] Build Native Modules',
-            path: './scripts/ios-build-native-modules.sh',
-            execution_position: 'after_compile'
-          }, {
             name: '[NODEJS MOBILE] Sign Native Modules',
             path: './scripts/ios-sign-native-modules.sh',
             execution_position: 'after_compile'
