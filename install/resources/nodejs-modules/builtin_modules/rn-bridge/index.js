@@ -172,6 +172,10 @@ class SystemChannel extends ChannelSuper {
     }
     return this._cacheDataDir;
   }
+  // send message to app channel
+  send(msg) {
+    NativeBridge.sendMessage(SYSTEM_CHANNEL, msg);
+  }
 };
 /**
  * Manage the registered channels to emit events/messages received by the

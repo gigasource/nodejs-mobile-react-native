@@ -55,6 +55,8 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
   // Flag to indicate if node is ready to receive app events.
   private static boolean nodeIsReadyForAppEvents = false;
 
+  private static ArrayList<RNNodeJsMobileListener> listeners = new ArrayList<>();
+
   static {
     System.loadLibrary("nodejs-mobile-react-native-native-lib");
     System.loadLibrary("node");
@@ -189,6 +191,10 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
     }
   }
 
+  public static void sendMessageStatic(String channel, String msg) {
+    sendMessageToNodeChannelStatic(channel, msg);
+  }
+
   @ReactMethod
   public void sendMessage(String channel, String msg) {
     sendMessageToNodeChannel(channel, msg);
@@ -231,9 +237,16 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
       // Activity `onDestroy`
   }
 
+  public static void registerAppListener(RNNodeJsMobileListener listener) {
+    listeners.add(listener);
+  }
+
   public static void handleAppChannelMessage(String msg) {
     if (msg.equals("ready-for-app-events")) {
       nodeIsReadyForAppEvents=true;
+    }
+    for (RNNodeJsMobileListener listener : listeners) {
+      listener.triggerEvent(msg);
     }
   }
 
@@ -262,6 +275,8 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
   public native Integer startNodeWithArguments(String[] arguments, String modulesPath, boolean option_redirectOutputToLogcat);
 
   public native void sendMessageToNodeChannel(String channelName, String msg);
+
+  public static native void sendMessageToNodeChannelStatic(String channelName, String msg);
 
   private void waitForInit() {
     if (!initCompleted) {
