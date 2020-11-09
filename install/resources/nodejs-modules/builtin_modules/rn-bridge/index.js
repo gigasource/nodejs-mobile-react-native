@@ -162,7 +162,9 @@ class SystemChannel extends ChannelSuper {
 
   processData(data) {
     // The data is the event.
-    this.emitWrapper(data);
+    let envelope = MessageCodec.deserialize(data);
+    this.emitWrapper(envelope.event, ...(envelope.payload));
+    // this.emitWrapper(data);
   };
 
   // Get a writable data directory for persistent file storage.
