@@ -174,9 +174,12 @@ class SystemChannel extends ChannelSuper {
     }
     return this._cacheDataDir;
   }
+  post(event, ...msg) {
+    NativeBridge.sendMessage(SYSTEM_CHANNEL, MessageCodec.serialize(event, ...msg));
+  }
   // send message to app channel
-  send(msg) {
-    NativeBridge.sendMessage(SYSTEM_CHANNEL, msg);
+  send(event, ...msg) {
+    this.post(event, ...msg);
   }
 };
 /**
