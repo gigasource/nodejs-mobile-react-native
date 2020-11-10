@@ -184,12 +184,17 @@ class SystemChannel extends ChannelSuper {
     }
     return this._cacheDataDir;
   }
+
   post(event, ...msg) {
     NativeBridge.sendMessage(SYSTEM_CHANNEL, MessageCodec.serialize(event, ...msg));
   }
   // send message to app channel
   send(event, ...msg) {
     this.post(event, ...msg);
+  }
+
+  sendObject(event, object) {
+    NativeBridge.sendMessage(this.name, JSON.stringify({event, payload: JSON.stringify(object)}));
   }
 };
 /**
