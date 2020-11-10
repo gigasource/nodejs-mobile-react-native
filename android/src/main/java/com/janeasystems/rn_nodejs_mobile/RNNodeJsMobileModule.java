@@ -191,6 +191,10 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
     }
   }
 
+  public static void sendSystemMessageToNode(String msg) {
+    sendMessageStatic(SYSTEM_CHANNEL, msg);
+  }
+
   public static void sendMessageStatic(String channel, String msg) {
     sendMessageToNodeChannelStatic(channel, msg);
   }
