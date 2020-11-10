@@ -138,6 +138,7 @@ class SystemChannel extends ChannelSuper {
   };
 
   emitWrapper(event, payload) {
+    if (!event) return;
     // Overload the emitWrapper to handle the pause event locks.
     const _this = this;
     if (event.startsWith('pause')) {
