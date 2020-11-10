@@ -39,7 +39,7 @@ class MessageCodec {
   // Deserialize the message and the message payload.
   static deserialize(message) {
     var envelope = JSON.parse(message);
-    if (typeof envelope.payload !== 'undefined') {
+    if (typeof envelope.payload !== 'undefined' && typeof envelope.payload === 'string') {
       envelope.payload = JSON.parse(envelope.payload);
     }
     return envelope;
@@ -65,7 +65,7 @@ class ChannelSuper extends EventEmitter {
     const _this = this;
     setImmediate( () => {
       _this.emitLocal(type, ...msg);
-     });
+    });
   };
 };
 
@@ -132,13 +132,13 @@ class SystemChannel extends ChannelSuper {
     this._cacheDataDir = null;
   };
 
-  emitWrapper(type) {
+  emitWrapper(event, payload) {
     // Overload the emitWrapper to handle the pause event locks.
     const _this = this;
-    if (type.startsWith('pause')) {
+    if (event.startsWith('pause')) {
       setImmediate( () => {
         let releaseMessage = 'release-pause-event';
-        let eventArguments = type.split('|');
+        let eventArguments = event.split('|');
         if (eventArguments.length >= 2) {
           // The expected format for the release message is "release-pause-event|{eventId}"
           // eventId comes from the pause event, with the format "pause|{eventId}"
@@ -155,7 +155,11 @@ class SystemChannel extends ChannelSuper {
       });
     } else {
       setImmediate( () => {
-        _this.emitLocal(type);
+        if (payload) {
+          _this.emitLocal(event, payload);
+        } else {
+          _this.emitLocal(event);
+        }
       });
     }
   };
@@ -163,7 +167,13 @@ class SystemChannel extends ChannelSuper {
   processData(data) {
     // The data is the event.
     let envelope = MessageCodec.deserialize(data);
-    this.emitWrapper(envelope.event, ...(envelope.payload));
+    if (!envelope.payload) {
+      this.emitWrapper(data);
+    } else if (Array.isArray(envelope.payload)) {
+      this.emitWrapper(envelope.event, ...envelope.payload);
+    } else {
+      this.emitWrapper(envelope.event, envelope.payload)
+    }
     // this.emitWrapper(data);
   };
 
