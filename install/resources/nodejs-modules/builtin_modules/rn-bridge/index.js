@@ -200,7 +200,7 @@ class SystemChannel extends ChannelSuper {
   }
 
   sendObject(event, object) {
-    NativeBridge.sendMessage(this.name, JSON.stringify({event, payload: JSON.stringify(object)}));
+    NativeBridge.sendMessage(this.name, JSON.stringify({event, payload: object}));
   }
 };
 /**
