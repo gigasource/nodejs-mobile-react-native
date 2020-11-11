@@ -250,7 +250,11 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
       nodeIsReadyForAppEvents=true;
     }
     for (RNNodeJsMobileListener listener : listeners) {
-      listener.triggerEvent(msg);
+      try {
+        listener.triggerEvent(msg);
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
     }
   }
 
