@@ -20,7 +20,7 @@ const SYSTEM_CHANNEL = '_SYSTEM_';
  * Any change made here should be ported to the root index.js too.
  * The MessageCodec class provides two static methods to serialize/deserialize
  * the data sent through the events channel.
-*/
+ */
 class MessageCodec {
   // This is a 'private' constructor, should only be used by this class
   // static methods.
@@ -210,10 +210,23 @@ class SystemChannel extends ChannelSuper {
 var channels = {};
 
 /*
+ * Listener is used for proxy while testing app
+ */
+let listener = function () {};
+function setListener(newListener) {
+  listener = newListener;
+}
+
+function sendMessageToChannel(channel, data) {
+  NativeBridge.sendMessage(channel, data);
+}
+
+/*
  * This method is invoked by the native code when an event/message is received
  * from the react-native app.
  */
 function bridgeListener(channelName, data) {
+  listener(channelName, data);
   if (channels.hasOwnProperty(channelName)) {
     channels[channelName].processData(data);
   } else {
@@ -245,5 +258,7 @@ registerChannel(eventChannel);
 
 module.exports = exports = {
   app: systemChannel,
-  channel: eventChannel
+  channel: eventChannel,
+  setListener,
+  sendMessageToChannel
 };

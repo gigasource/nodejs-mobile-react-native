@@ -1,4 +1,3 @@
-
 package com.janeasystems.rn_nodejs_mobile;
 
 import com.facebook.react.bridge.ReactApplicationContext;
@@ -32,6 +31,7 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
   private final ReactApplicationContext reactContext;
   private static final String TAG = "NODEJS-RN";
   private static final String NODEJS_PROJECT_DIR = "nodejs-project";
+  private static final String NODEJS_LIB_DIR = "nodejs-project/lib";
   private static final String NODEJS_BUILTIN_MODULES = "nodejs-builtin_modules";
   private static final String TRASH_DIR = "nodejs-project-trash";
   private static final String SHARED_PREFS = "NODEJS_MOBILE_PREFS";
@@ -130,10 +130,10 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
   {
     final String OPTION_NAME = "redirectOutputToLogcat";
     if( (options != null) &&
-        options.hasKey(OPTION_NAME) &&
-        !options.isNull(OPTION_NAME) &&
-        (options.getType(OPTION_NAME) == ReadableType.Boolean)
-      ) {
+            options.hasKey(OPTION_NAME) &&
+            !options.isNull(OPTION_NAME) &&
+            (options.getType(OPTION_NAME) == ReadableType.Boolean)
+    ) {
       return options.getBoolean(OPTION_NAME);
     } else {
       // By default, we redirect the process' stdout and stderr to show in logcat
@@ -156,11 +156,11 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
         public void run() {
           waitForInit();
           startNodeWithArguments(new String[]{"node",
-            "-e",
-            scriptToRun
-            },
-            nodeJsProjectPath + ":" + builtinModulesPath,
-            redirectOutputToLogcat
+                          "-e",
+                          scriptToRun
+                  },
+                  nodeJsProjectPath + ":" + builtinModulesPath,
+                  redirectOutputToLogcat
           );
         }
       }).start();
@@ -181,10 +181,10 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
         public void run() {
           waitForInit();
           startNodeWithArguments(new String[]{"node",
-            nodeJsProjectPath + "/" + mainFileName
-            },
-            nodeJsProjectPath + ":" + builtinModulesPath,
-            redirectOutputToLogcat
+                          nodeJsProjectPath + "/" + mainFileName
+                  },
+                  nodeJsProjectPath + ":" + builtinModulesPath,
+                  redirectOutputToLogcat
           );
         }
       }).start();
@@ -208,8 +208,8 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
   private void sendEvent(String eventName,
                          @Nullable WritableMap params) {
     reactContext
-      .getJSModule(RCTNativeAppEventEmitter.class)
-      .emit(eventName, params);
+            .getJSModule(RCTNativeAppEventEmitter.class)
+            .emit(eventName, params);
   }
 
   public static void sendMessageToApplication(String channelName, String msg) {
@@ -238,7 +238,7 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
 
   @Override
   public void onHostDestroy() {
-      // Activity `onDestroy`
+    // Activity `onDestroy`
   }
 
   public static void registerAppListener(RNNodeJsMobileListener listener) {
@@ -382,16 +382,33 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
     ArrayList<String> files = readFileFromAssets("file.list");
 
     // Copy the nodejs project files to the application's data path.
+    String arch = System.getProperty("os.arch");
+    if (arch.equals("armv7l")) {
+      arch = "armv7a";
+    }
     if (dirs.size() > 0 && files.size() > 0) {
       Log.d(TAG, "Node assets copy using pre-built lists");
       for (String dir : dirs) {
-        new File(filesDirPath + "/" + dir).mkdirs();
+        if (dir.startsWith(NODEJS_LIB_DIR)) {
+          Log.d(TAG, dir);
+        } else {
+          new File(filesDirPath + "/" + dir).mkdirs();
+        }
       }
 
       for (String file : files) {
         String src = file;
-        String dest = filesDirPath + "/" + file;
-        copyAsset(src, dest);
+        if (file.startsWith(NODEJS_LIB_DIR)) {
+          if (file.startsWith(NODEJS_LIB_DIR + '/' + arch)) {
+            String[] splitFilePath = file.split("/");
+            Log.d(TAG, "Copying " + splitFilePath[splitFilePath.length - 1]);
+            String dest = nodeJsProjectPath + '/' + splitFilePath[splitFilePath.length - 1];
+            copyAsset(src, dest);
+          }
+        } else {
+          String dest = filesDirPath + "/" + file;
+          copyAsset(src, dest);
+        }
       }
     } else {
       Log.d(TAG, "Node assets copy enumerating APK assets");
