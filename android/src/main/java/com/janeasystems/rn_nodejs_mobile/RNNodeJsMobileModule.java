@@ -383,8 +383,10 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
 
     // Copy the nodejs project files to the application's data path.
     String arch = System.getProperty("os.arch");
-    if (arch.equals("armv7l")) {
+    if (!arch.contains("64")) {
       arch = "armv7a";
+    } else {
+      arch = "aarch64";
     }
     if (dirs.size() > 0 && files.size() > 0) {
       Log.d(TAG, "Node assets copy using pre-built lists");
