@@ -141,6 +141,22 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
     }
   }
 
+  // Extracts the option to redirect stdout and stderr to logcat
+  private String extractDbPathOption(ReadableMap options)
+  {
+    final String OPTION_NAME = "dbPath";
+    if( (options != null) &&
+        options.hasKey(OPTION_NAME) &&
+        !options.isNull(OPTION_NAME) &&
+        (options.getType(OPTION_NAME) == ReadableType.String)
+    ) {
+      return options.getString(OPTION_NAME);
+    } else {
+      // By default, we redirect the process' stdout and stderr to show in logcat
+      return null;
+    }
+  }
+
   @ReactMethod
   public void startNodeWithScript(String script, ReadableMap options) throws Exception {
     // A New module instance may have been created due to hot reload.
@@ -175,16 +191,21 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
       _startedNodeAlready = true;
 
       final boolean redirectOutputToLogcat = extractRedirectOutputToLogcatOption(options);
+      final String dbPath = extractDbPathOption(options);
 
       new Thread(new Runnable() {
         @Override
         public void run() {
           waitForInit();
-          startNodeWithArguments(new String[]{"node",
-                          nodeJsProjectPath + "/" + mainFileName
-                  },
-                  nodeJsProjectPath + ":" + builtinModulesPath,
-                  redirectOutputToLogcat
+          ArrayList<String> args = new ArrayList<>();
+          args.add("node");
+          args.add(nodeJsProjectPath + "/" + mainFileName);
+          if (dbPath != null)
+            args.add(dbPath);
+
+          startNodeWithArguments(args.toArray(new String[0]),
+              nodeJsProjectPath + ":" + builtinModulesPath,
+              redirectOutputToLogcat
           );
         }
       }).start();
