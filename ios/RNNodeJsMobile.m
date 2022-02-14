@@ -35,7 +35,7 @@ NSString* nodePath;
   nodePath = [[NSBundle mainBundle] pathForResource:NODEJS_PROJECT_RESOURCE_PATH ofType:@""];
   nodePath = [nodePath stringByAppendingString:@":"];
   nodePath = [nodePath stringByAppendingString:builtinModulesPath];
-  
+
   return self;
 }
 
@@ -77,7 +77,7 @@ RCT_EXPORT_METHOD(sendMessage:(NSString *)channelName:(NSString *)message)
 
 -(void)callStartNodeProject:(NSString *)mainFileName
 {
-  NSString* srcPath = [[NSBundle mainBundle] pathForResource:[NSString stringWithFormat:@"%@/%@", NODEJS_PROJECT_RESOURCE_PATH, mainFileName] ofType:@""];
+  NSString* srcPath = mainFileName;
   NSArray* nodeArguments = nil;
 
   NSString* dlopenoverridePath = [[NSBundle mainBundle] pathForResource:[NSString stringWithFormat:@"%@/%@", NODEJS_PROJECT_RESOURCE_PATH, NODEJS_DLOPEN_OVERRIDE_FILENAME] ofType:@""];

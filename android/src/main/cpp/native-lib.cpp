@@ -122,7 +122,7 @@ int start_redirecting_stdout_stderr() {
 
     //set stderr as unbuffered.
     setvbuf(stderr, 0, _IONBF, 0);
-    pipe(pipe_stderr);    
+    pipe(pipe_stderr);
     dup2(pipe_stderr[1], STDERR_FILENO);
 
     if(pthread_create(&thread_stdout, 0, thread_stdout_func, 0) == -1)
@@ -198,4 +198,14 @@ Java_com_janeasystems_rn_1nodejs_1mobile_RNNodeJsMobileModule_startNodeWithArgum
     //Start node, with argc and argv.
     return jint(callintoNode(argument_count,argv));
 
+}
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_janeasystems_rn_1nodejs_1mobile_RNNodeJsMobileModule_sendMessageToNodeChannelStatic(
+        JNIEnv *env, jclass clazz, jstring channelName, jstring msg) {
+    const char* nativeChannelName = env->GetStringUTFChars(channelName, 0);
+    const char* nativeMessage = env->GetStringUTFChars(msg, 0);
+    rn_bridge_notify(nativeChannelName, nativeMessage);
+    env->ReleaseStringUTFChars(channelName,nativeChannelName);
+    env->ReleaseStringUTFChars(msg,nativeMessage);
 }

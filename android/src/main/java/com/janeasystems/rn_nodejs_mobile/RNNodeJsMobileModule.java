@@ -1,4 +1,3 @@
-
 package com.janeasystems.rn_nodejs_mobile;
 
 import com.facebook.react.bridge.ReactApplicationContext;
@@ -32,6 +31,7 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
   private final ReactApplicationContext reactContext;
   private static final String TAG = "NODEJS-RN";
   private static final String NODEJS_PROJECT_DIR = "nodejs-project";
+  private static final String NODEJS_LIB_DIR = "nodejs-project/lib";
   private static final String NODEJS_BUILTIN_MODULES = "nodejs-builtin_modules";
   private static final String TRASH_DIR = "nodejs-project-trash";
   private static final String SHARED_PREFS = "NODEJS_MOBILE_PREFS";
@@ -54,6 +54,8 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
 
   // Flag to indicate if node is ready to receive app events.
   private static boolean nodeIsReadyForAppEvents = false;
+
+  private static ArrayList<RNNodeJsMobileListener> listeners = new ArrayList<>();
 
   static {
     System.loadLibrary("nodejs-mobile-react-native-native-lib");
@@ -128,14 +130,30 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
   {
     final String OPTION_NAME = "redirectOutputToLogcat";
     if( (options != null) &&
-        options.hasKey(OPTION_NAME) &&
-        !options.isNull(OPTION_NAME) &&
-        (options.getType(OPTION_NAME) == ReadableType.Boolean)
-      ) {
+            options.hasKey(OPTION_NAME) &&
+            !options.isNull(OPTION_NAME) &&
+            (options.getType(OPTION_NAME) == ReadableType.Boolean)
+    ) {
       return options.getBoolean(OPTION_NAME);
     } else {
       // By default, we redirect the process' stdout and stderr to show in logcat
       return true;
+    }
+  }
+
+  // Extracts the option to redirect stdout and stderr to logcat
+  private String extractDbPathOption(ReadableMap options)
+  {
+    final String OPTION_NAME = "dbPath";
+    if( (options != null) &&
+        options.hasKey(OPTION_NAME) &&
+        !options.isNull(OPTION_NAME) &&
+        (options.getType(OPTION_NAME) == ReadableType.String)
+    ) {
+      return options.getString(OPTION_NAME);
+    } else {
+      // By default, we redirect the process' stdout and stderr to show in logcat
+      return null;
     }
   }
 
@@ -154,11 +172,11 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
         public void run() {
           waitForInit();
           startNodeWithArguments(new String[]{"node",
-            "-e",
-            scriptToRun
-            },
-            nodeJsProjectPath + ":" + builtinModulesPath,
-            redirectOutputToLogcat
+                          "-e",
+                          scriptToRun
+                  },
+                  nodeJsProjectPath + ":" + builtinModulesPath,
+                  redirectOutputToLogcat
           );
         }
       }).start();
@@ -173,20 +191,33 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
       _startedNodeAlready = true;
 
       final boolean redirectOutputToLogcat = extractRedirectOutputToLogcatOption(options);
+      final String dbPath = extractDbPathOption(options);
 
       new Thread(new Runnable() {
         @Override
         public void run() {
           waitForInit();
-          startNodeWithArguments(new String[]{"node",
-            nodeJsProjectPath + "/" + mainFileName
-            },
-            nodeJsProjectPath + ":" + builtinModulesPath,
-            redirectOutputToLogcat
+          ArrayList<String> args = new ArrayList<>();
+          args.add("node");
+          args.add(nodeJsProjectPath + "/" + mainFileName);
+          if (dbPath != null)
+            args.add(dbPath);
+
+          startNodeWithArguments(args.toArray(new String[0]),
+              nodeJsProjectPath + ":" + builtinModulesPath,
+              redirectOutputToLogcat
           );
         }
       }).start();
     }
+  }
+
+  public static void sendSystemMessageToNode(String msg) {
+    sendMessageStatic(SYSTEM_CHANNEL, msg);
+  }
+
+  public static void sendMessageStatic(String channel, String msg) {
+    sendMessageToNodeChannelStatic(channel, msg);
   }
 
   @ReactMethod
@@ -198,8 +229,8 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
   private void sendEvent(String eventName,
                          @Nullable WritableMap params) {
     reactContext
-      .getJSModule(RCTNativeAppEventEmitter.class)
-      .emit(eventName, params);
+            .getJSModule(RCTNativeAppEventEmitter.class)
+            .emit(eventName, params);
   }
 
   public static void sendMessageToApplication(String channelName, String msg) {
@@ -228,12 +259,23 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
 
   @Override
   public void onHostDestroy() {
-      // Activity `onDestroy`
+    // Activity `onDestroy`
+  }
+
+  public static void registerAppListener(RNNodeJsMobileListener listener) {
+    listeners.add(listener);
   }
 
   public static void handleAppChannelMessage(String msg) {
     if (msg.equals("ready-for-app-events")) {
       nodeIsReadyForAppEvents=true;
+    }
+    for (RNNodeJsMobileListener listener : listeners) {
+      try {
+        listener.triggerEvent(msg);
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
     }
   }
 
@@ -262,6 +304,8 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
   public native Integer startNodeWithArguments(String[] arguments, String modulesPath, boolean option_redirectOutputToLogcat);
 
   public native void sendMessageToNodeChannel(String channelName, String msg);
+
+  public static native void sendMessageToNodeChannelStatic(String channelName, String msg);
 
   private void waitForInit() {
     if (!initCompleted) {
@@ -359,16 +403,35 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
     ArrayList<String> files = readFileFromAssets("file.list");
 
     // Copy the nodejs project files to the application's data path.
+    String arch = System.getProperty("os.arch");
+    if (!arch.contains("64")) {
+      arch = "armv7a";
+    } else {
+      arch = "aarch64";
+    }
     if (dirs.size() > 0 && files.size() > 0) {
       Log.d(TAG, "Node assets copy using pre-built lists");
       for (String dir : dirs) {
-        new File(filesDirPath + "/" + dir).mkdirs();
+        if (dir.startsWith(NODEJS_LIB_DIR)) {
+          Log.d(TAG, dir);
+        } else {
+          new File(filesDirPath + "/" + dir).mkdirs();
+        }
       }
 
       for (String file : files) {
         String src = file;
-        String dest = filesDirPath + "/" + file;
-        copyAsset(src, dest);
+        if (file.startsWith(NODEJS_LIB_DIR)) {
+          if (file.startsWith(NODEJS_LIB_DIR + '/' + arch)) {
+            String[] splitFilePath = file.split("/");
+            Log.d(TAG, "Copying " + splitFilePath[splitFilePath.length - 1]);
+            String dest = nodeJsProjectPath + '/' + splitFilePath[splitFilePath.length - 1];
+            copyAsset(src, dest);
+          }
+        } else {
+          String dest = filesDirPath + "/" + file;
+          copyAsset(src, dest);
+        }
       }
     } else {
       Log.d(TAG, "Node assets copy enumerating APK assets");

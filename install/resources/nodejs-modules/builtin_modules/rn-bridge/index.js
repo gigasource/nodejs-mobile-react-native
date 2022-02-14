@@ -20,7 +20,7 @@ const SYSTEM_CHANNEL = '_SYSTEM_';
  * Any change made here should be ported to the root index.js too.
  * The MessageCodec class provides two static methods to serialize/deserialize
  * the data sent through the events channel.
-*/
+ */
 class MessageCodec {
   // This is a 'private' constructor, should only be used by this class
   // static methods.
@@ -38,11 +38,16 @@ class MessageCodec {
 
   // Deserialize the message and the message payload.
   static deserialize(message) {
-    var envelope = JSON.parse(message);
-    if (typeof envelope.payload !== 'undefined') {
-      envelope.payload = JSON.parse(envelope.payload);
+    try {
+      var envelope = JSON.parse(message);
+
+      if (typeof envelope.payload !== 'undefined' && typeof envelope.payload === 'string') {
+        envelope.payload = JSON.parse(envelope.payload);
+      }
+      return envelope;
+    } catch (err) {
+      return {};
     }
-    return envelope;
   };
 };
 
@@ -65,7 +70,7 @@ class ChannelSuper extends EventEmitter {
     const _this = this;
     setImmediate( () => {
       _this.emitLocal(type, ...msg);
-     });
+    });
   };
 };
 
@@ -132,13 +137,14 @@ class SystemChannel extends ChannelSuper {
     this._cacheDataDir = null;
   };
 
-  emitWrapper(type) {
+  emitWrapper(event, payload) {
+    if (!event) return;
     // Overload the emitWrapper to handle the pause event locks.
     const _this = this;
-    if (type.startsWith('pause')) {
+    if (event.startsWith('pause')) {
       setImmediate( () => {
         let releaseMessage = 'release-pause-event';
-        let eventArguments = type.split('|');
+        let eventArguments = event.split('|');
         if (eventArguments.length >= 2) {
           // The expected format for the release message is "release-pause-event|{eventId}"
           // eventId comes from the pause event, with the format "pause|{eventId}"
@@ -155,14 +161,26 @@ class SystemChannel extends ChannelSuper {
       });
     } else {
       setImmediate( () => {
-        _this.emitLocal(type);
+        if (payload) {
+          _this.emitLocal(event, payload);
+        } else {
+          _this.emitLocal(event);
+        }
       });
     }
   };
 
   processData(data) {
     // The data is the event.
-    this.emitWrapper(data);
+    let envelope = MessageCodec.deserialize(data);
+    if (!envelope.payload) {
+      this.emitWrapper(data);
+    } else if (Array.isArray(envelope.payload)) {
+      this.emitWrapper(envelope.event, ...envelope.payload);
+    } else {
+      this.emitWrapper(envelope.event, envelope.payload)
+    }
+    // this.emitWrapper(data);
   };
 
   // Get a writable data directory for persistent file storage.
@@ -172,6 +190,18 @@ class SystemChannel extends ChannelSuper {
     }
     return this._cacheDataDir;
   }
+
+  post(event, ...msg) {
+    NativeBridge.sendMessage(SYSTEM_CHANNEL, MessageCodec.serialize(event, ...msg));
+  }
+  // send message to app channel
+  send(event, ...msg) {
+    this.post(event, ...msg);
+  }
+
+  sendObject(event, object) {
+    NativeBridge.sendMessage(this.name, JSON.stringify({event, payload: object}));
+  }
 };
 /**
  * Manage the registered channels to emit events/messages received by the
@@ -180,10 +210,23 @@ class SystemChannel extends ChannelSuper {
 var channels = {};
 
 /*
+ * Listener is used for proxy while testing app
+ */
+let listener = function () {};
+function setListener(newListener) {
+  listener = newListener;
+}
+
+function sendMessageToChannel(channel, data) {
+  NativeBridge.sendMessage(channel, data);
+}
+
+/*
  * This method is invoked by the native code when an event/message is received
  * from the react-native app.
  */
 function bridgeListener(channelName, data) {
+  listener(channelName, data);
   if (channels.hasOwnProperty(channelName)) {
     channels[channelName].processData(data);
   } else {
@@ -215,5 +258,7 @@ registerChannel(eventChannel);
 
 module.exports = exports = {
   app: systemChannel,
-  channel: eventChannel
+  channel: eventChannel,
+  setListener,
+  sendMessageToChannel
 };
