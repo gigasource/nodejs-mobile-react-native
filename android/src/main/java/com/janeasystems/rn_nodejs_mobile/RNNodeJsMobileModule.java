@@ -202,7 +202,7 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
           args.add(nodeJsProjectPath + "/" + mainFileName);
           if (dbPath != null)
             args.add(dbPath);
-
+          args.add("--flavor=" + (BuildConfig.FLAVOR.length() != 0 ? BuildConfig.FLAVOR : "gigasource"));
           startNodeWithArguments(args.toArray(new String[0]),
               nodeJsProjectPath + ":" + builtinModulesPath,
               redirectOutputToLogcat
