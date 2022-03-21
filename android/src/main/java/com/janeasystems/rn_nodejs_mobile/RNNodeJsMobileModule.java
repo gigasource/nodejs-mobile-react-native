@@ -23,6 +23,7 @@ import android.system.ErrnoException;
 
 import java.io.*;
 import java.util.*;
+import java.lang.reflect.Field;
 import java.util.concurrent.Semaphore;
 
 @ReactModule(name = "RNNodeJsMobile")
@@ -67,6 +68,11 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
 
   // We just want one instance of node running in the background.
   public static boolean _startedNodeAlready = false;
+  public static Class buildConfigClass = null;
+
+  public static setBuildConfigClass(Class _buildConfigClass) {
+    buildConfigClass = _buildConfigClass
+  }
 
   public RNNodeJsMobileModule(ReactApplicationContext reactContext) {
     super(reactContext);
@@ -202,7 +208,16 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
           args.add(nodeJsProjectPath + "/" + mainFileName);
           if (dbPath != null)
             args.add(dbPath);
-          args.add("--flavor=" + (BuildConfig.FLAVOR.length() != 0 ? BuildConfig.FLAVOR : "gigasource"));
+          String flavor = "gigasource";
+          if (buildConfigClass != null) {
+            try {
+              Field field = buildConfigClass.getDeclaredField("FLAVOR");
+              flavor = (String) field.get(String.class);
+            } catch (Exception e) {
+              e.printStackTrace();
+            }
+          }
+          args.add("--flavor=" + flavor);
           startNodeWithArguments(args.toArray(new String[0]),
               nodeJsProjectPath + ":" + builtinModulesPath,
               redirectOutputToLogcat
