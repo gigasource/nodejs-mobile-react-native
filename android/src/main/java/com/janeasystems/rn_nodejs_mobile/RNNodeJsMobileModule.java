@@ -70,8 +70,8 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
   public static boolean _startedNodeAlready = false;
   public static Class buildConfigClass = null;
 
-  public static setBuildConfigClass(Class _buildConfigClass) {
-    buildConfigClass = _buildConfigClass
+  public static void setBuildConfigClass(Class _buildConfigClass) {
+    buildConfigClass = _buildConfigClass;
   }
 
   public RNNodeJsMobileModule(ReactApplicationContext reactContext) {
