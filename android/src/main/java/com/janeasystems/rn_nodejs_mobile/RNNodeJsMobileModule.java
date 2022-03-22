@@ -148,9 +148,8 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
   }
 
   // Extracts the option to redirect stdout and stderr to logcat
-  private String extractDbPathOption(ReadableMap options)
+  private String extractStringOption(ReadableMap options, String OPTION_NAME)
   {
-    final String OPTION_NAME = "dbPath";
     if( (options != null) &&
         options.hasKey(OPTION_NAME) &&
         !options.isNull(OPTION_NAME) &&
@@ -197,7 +196,8 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
       _startedNodeAlready = true;
 
       final boolean redirectOutputToLogcat = extractRedirectOutputToLogcatOption(options);
-      final String dbPath = extractDbPathOption(options);
+      final String dbPath = extractStringOption(options, "dbPath");
+      final String disconnectOnline = extractStringOption(options, "disconnectOnline");
 
       new Thread(new Runnable() {
         @Override
@@ -208,6 +208,8 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
           args.add(nodeJsProjectPath + "/" + mainFileName);
           if (dbPath != null)
             args.add(dbPath);
+          if (disconnectOnline != null)
+            args.add(disconnectOnline);
           String flavor = "gigasource";
           if (buildConfigClass != null) {
             try {
