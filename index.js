@@ -126,7 +126,7 @@ const export_object = {
   startWithScript: startWithScript,
   channel: eventChannel,
   waitForNodeInit: waitForNodeInit,
-  setFilesDirPath
+  setFilesDirPath: setFilesDirPath
 };
 
 module.exports = export_object;
