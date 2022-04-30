@@ -91,6 +91,12 @@ const startWithScript=function(script, options) {
   options = options || {};
   RNNodeJsMobile.startNodeWithScript(script, options);
 }
+const waitForNodeInit=function() {
+  return RNNodeJsMobile.waitForNodeInit()
+}
+const setFilesDirPath = function(filePath) {
+  RNNodeJsMobile.setFilesDirPath(filePath)
+}
 
 /*
  * Dispatcher for all channels. This event is called by the plug-in
@@ -118,7 +124,9 @@ registerChannel(eventChannel);
 const export_object = {
   start: start,
   startWithScript: startWithScript,
-  channel: eventChannel
+  channel: eventChannel,
+  waitForNodeInit: waitForNodeInit,
+  setFilesDirPath
 };
 
 module.exports = export_object;

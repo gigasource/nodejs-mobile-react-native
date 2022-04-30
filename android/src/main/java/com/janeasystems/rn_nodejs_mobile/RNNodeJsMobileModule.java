@@ -1,5 +1,6 @@
 package com.janeasystems.rn_nodejs_mobile;
 
+import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
@@ -79,9 +80,9 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
     this.reactContext = reactContext;
     reactContext.addLifecycleEventListener(this);
     filesDirPath = reactContext.getFilesDir().getAbsolutePath();
-
+    SharedPreferences preferences = reactContext.getSharedPreferences("NODEJS-MOBILE", Context.MODE_PRIVATE);
     // The paths where we expect the node project assets to be at runtime.
-    nodeJsProjectPath = filesDirPath + "/" + NODEJS_PROJECT_DIR;
+    nodeJsProjectPath = preferences.getString("nodeJsProjectPath", filesDirPath + "/" + NODEJS_PROJECT_DIR);
     builtinModulesPath = filesDirPath + "/" + NODEJS_BUILTIN_MODULES;
     trashDirPath = filesDirPath + "/" + TRASH_DIR;
     nativeAssetsPath = BUILTIN_NATIVE_ASSETS_PREFIX + getCurrentABIName();
@@ -185,6 +186,36 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
           );
         }
       }).start();
+    }
+  }
+
+  @ReactMethod
+  public void waitForNodeInit(final Promise promise) {
+    Thread waitThread = new Thread(new Runnable() {
+      @Override
+      public void run() {
+        waitForInit();
+        promise.resolve(true);
+      }
+    });
+    waitThread.start();
+  }
+
+  @ReactMethod
+  public void setFilesDirPath(String _filesDirPath) {
+    try {
+      File newFile = new File(_filesDirPath);
+      if (!newFile.isDirectory()) {
+        newFile.mkdir();
+      }
+      copyDirectoryOneLocationToAnotherLocation(new File(nodeJsProjectPath), newFile);
+      nodeJsProjectPath = _filesDirPath;
+      SharedPreferences preferences = getReactApplicationContext().getSharedPreferences("NODEJS-MOBILE", Context.MODE_PRIVATE);
+      SharedPreferences.Editor editor = preferences.edit();
+      editor.putString("nodeJsProjectPath", _filesDirPath);
+      editor.commit();
+    } catch (IOException e) {
+      e.printStackTrace();
     }
   }
 
@@ -402,6 +433,32 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
       Log.v(TAG, "No assets to copy from " + nativeAssetsPath);
     }
     return true;
+  }
+
+  public void copyDirectoryOneLocationToAnotherLocation(File sourceLocation, File targetLocation) throws IOException {
+    if (sourceLocation.isDirectory()) {
+      if (!targetLocation.exists()) {
+        targetLocation.mkdir();
+      }
+
+      String[] children = sourceLocation.list();
+      for (int i = 0; i < sourceLocation.listFiles().length; i++) {
+        copyDirectoryOneLocationToAnotherLocation(new File(sourceLocation, children[i]),
+            new File(targetLocation, children[i]));
+      }
+    } else {
+      InputStream in = new FileInputStream(sourceLocation);
+      OutputStream out = new FileOutputStream(targetLocation);
+
+      // Copy the bits from instream to outstream
+      byte[] buf = new byte[1024];
+      int len;
+      while ((len = in.read(buf)) > 0) {
+        out.write(buf, 0, len);
+      }
+      in.close();
+      out.close();
+    }
   }
 
 
