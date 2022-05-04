@@ -82,7 +82,7 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
     filesDirPath = reactContext.getFilesDir().getAbsolutePath();
     SharedPreferences preferences = reactContext.getSharedPreferences("NODEJS-MOBILE", Context.MODE_PRIVATE);
     // The paths where we expect the node project assets to be at runtime.
-    nodeJsProjectPath = preferences.getString("nodeJsProjectPath", filesDirPath + "/" + NODEJS_PROJECT_DIR);
+    nodeJsProjectPath = preferences.getString("nodeJsProjectPath", filesDirPath) + "/" + NODEJS_PROJECT_DIR;
     builtinModulesPath = filesDirPath + "/" + NODEJS_BUILTIN_MODULES;
     trashDirPath = filesDirPath + "/" + TRASH_DIR;
     nativeAssetsPath = BUILTIN_NATIVE_ASSETS_PREFIX + getCurrentABIName();
@@ -204,7 +204,7 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
   @ReactMethod
   public void setFilesDirPath(String _filesDirPath) {
     try {
-      File newFile = new File(_filesDirPath);
+      File newFile = new File(_filesDirPath + "/" + NODEJS_PROJECT_DIR);
       if (!newFile.isDirectory()) {
         newFile.mkdir();
       }
@@ -499,7 +499,7 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
           if (file.startsWith(NODEJS_LIB_DIR + '/' + arch)) {
             String[] splitFilePath = file.split("/");
             Log.d(TAG, "Copying " + splitFilePath[splitFilePath.length - 1]);
-            String dest = nodeJsProjectPath + '/' + splitFilePath[splitFilePath.length - 1];
+            String dest = filesDirPath + "/" + NODEJS_PROJECT_DIR + "/" + splitFilePath[splitFilePath.length - 1];
             copyAsset(src, dest);
           }
         } else {
