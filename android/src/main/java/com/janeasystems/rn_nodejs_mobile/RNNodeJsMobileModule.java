@@ -229,6 +229,7 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
       final boolean redirectOutputToLogcat = extractRedirectOutputToLogcatOption(options);
       final String dbPath = extractStringOption(options, "dbPath");
       final String disconnectOnline = extractStringOption(options, "disconnectOnline");
+      final String mainBundleDir = extractStringOption(options, "mainBundleDir");
 
       new Thread(new Runnable() {
         @Override
@@ -241,6 +242,9 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
             args.add(dbPath);
           if (disconnectOnline != null)
             args.add(disconnectOnline);
+          if (mainBundleDir != null)
+            args.add(mainBundleDir);
+          args.add('--max-old-space-size=4096')
           String flavor = "gigasource";
           if (buildConfigClass != null) {
             try {
