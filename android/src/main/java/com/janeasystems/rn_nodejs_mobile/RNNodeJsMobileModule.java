@@ -244,7 +244,7 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
             args.add(disconnectOnline);
           if (mainBundleDir != null)
             args.add(mainBundleDir);
-          args.add('--max-old-space-size=4096');
+          args.add("--max-old-space-size=4096");
           String flavor = "gigasource";
           if (buildConfigClass != null) {
             try {
