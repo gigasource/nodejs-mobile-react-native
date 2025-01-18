@@ -35,6 +35,10 @@ function installFiles(done) {
     return;
   }
 
+  console.log('Current Working Directory:', process.cwd());
+  console.log('__filename:', __filename);
+  console.log('__dirname:', __dirname);
+  
   var scriptPath = __filename;
   
   // The path to the package running the 'install' or 'postinstall' script.
