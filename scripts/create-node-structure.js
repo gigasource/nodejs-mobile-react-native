@@ -8,6 +8,7 @@ var mkdirp = require('mkdirp');
 
 
 function hostPackageDir(file) {
+  console.log('hostPackageDir', file);
   var pathComponents = file.split(path.sep);
   var modulesDirIndex = pathComponents.lastIndexOf('node_modules');
   if (modulesDirIndex < 1) return undefined;
@@ -38,10 +39,12 @@ function installFiles(done) {
   
   // The path to the package running the 'install' or 'postinstall' script.
   var fileInstallingPackagePath = hostPackageDir(scriptPath);
+  console.log('fileInstallingPackagePath', fileInstallingPackagePath);
   
   // The target package responsible for the 'install' or 'postinstall' event
   var installTargetPackageName = process.env.npm_package_name;
-  
+  console.log('installTargetPackageName', process.env.npm_package_name);
+
   var source, target;
   source = path.join(fileInstallingPackagePath, 'node_modules', installTargetPackageName, 'install','resources','nodejs-assets');
   target = fileInstallingPackagePath;
